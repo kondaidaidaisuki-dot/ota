@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地下アイドルファンシミュレーター v0.3</title>
+<style>
+:root{--orange:#ff8200;--orange-light:#fff5eb;--bg:#f2f2f2;--card:#fff;--text:#333;--text2:#939393;--border:#e6e6e6;--danger:#e6162d;--success:#00b578;--obs-lo:#52c41a;--obs-md:#faad14;--obs-hi:#ff4d4f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;min-height:100vh;position:relative}
+.screen{display:none;animation:fadeIn .35s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.title-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);color:#fff;text-align:center;padding:40px 24px}
+.title-screen h1{font-size:26px;font-weight:800;margin-bottom:6px;letter-spacing:1px}
+.title-screen .jp{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:14px}
+.title-screen .tagline{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:32px;max-width:300px;line-height:1.8}
+.title-screen .credit{font-size:10px;color:rgba(255,255,255,0.2);margin-top:14px}
+.btn-start{background:var(--orange);color:#fff;border:none;padding:14px 52px;border-radius:30px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(255,130,0,0.3);transition:all .3s;font-family:inherit}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(255,130,0,0.5)}
+
+.prologue-screen{padding:6px 0;background:var(--bg);min-height:100vh}
+.prologue-card{background:var(--card);margin:0 16px 10px;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.prologue-card h2{font-size:15px;margin-bottom:10px}
+.prologue-card p{font-size:12px;line-height:1.8;color:var(--text2);margin-bottom:6px}
+.input-name{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none}
+.input-name:focus{border-color:var(--orange)}
+.idol-select{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.idol-chip{padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;transition:all .2s;background:#fff;font-family:inherit}
+.idol-chip:hover,.idol-chip.selected{border-color:var(--orange);background:var(--orange-light)}
+.idol-chip.custom{border-style:dashed;min-width:100px}
+.identity-options{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.identity-card{border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s}
+.identity-card:hover,.identity-card.selected{border-color:var(--orange);background:var(--orange-light)}
+.identity-card h3{font-size:13px;margin-bottom:2px}
+.identity-card p{font-size:11px;color:var(--text2);margin:0}
+.identity-card .tag{display:inline-block;font-size:9px;padding:2px 6px;border-radius:3px;margin-top:4px}
+.tag-student{background:#e3f2fd;color:#1976d2}
+.tag-worker{background:#fff3e0;color:#f57c00}
+.tag-full{background:#fce4ec;color:#c2185b}
+.btn-confirm{width:calc(100% - 32px);margin:0 16px 16px;background:var(--orange);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-confirm:disabled{opacity:.4;cursor:not-allowed}
+
+.main-header{background:var(--card);padding:10px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.main-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.header-info{flex:1;margin-left:10px}
+.header-info .name{font-size:13px;font-weight:600}
+.header-info .oshi{font-size:10px;color:var(--orange)}
+.week-badge{display:inline-block;font-size:9px;color:var(--orange);background:var(--orange-light);padding:2px 7px;border-radius:8px}
+.header-action{font-size:10px;color:var(--text2);text-align:right}
+.stats-bar{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.stat-pill{background:var(--bg);border-radius:6px;padding:6px 8px;display:flex;align-items:center;gap:6px}
+.stat-pill .icon{font-size:13px;flex-shrink:0}
+.stat-pill .info{flex:1;min-width:0}
+.stat-pill .label{font-size:9px;color:var(--text2)}
+.stat-pill .value{font-size:13px;font-weight:700}
+.stat-pill .bar{height:2px;background:var(--border);border-radius:1px;margin-top:2px;overflow:hidden}
+.stat-pill .bar-inner{height:100%;border-radius:1px;transition:width .4s}
+.bar-money{background:#52c41a}.bar-obs{background:var(--obs-md)}
+.bar-obs.warning{background:var(--obs-hi)}.bar-obs.danger{background:#e6162d}
+.bar-rel{background:var(--orange)}.bar-real{background:#667eea}
+.content-area{padding:8px 16px 80px}
+
+.weibo-post{background:var(--card);border-radius:10px;padding:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.post-header{display:flex;align-items:center;margin-bottom:7px}
+.post-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;flex-shrink:0}
+.post-meta{margin-left:8px}
+.post-meta .name{font-size:12px;font-weight:600}
+.post-meta .time{font-size:9px;color:var(--text2)}
+.post-body{font-size:13px;line-height:1.7;margin-bottom:8px;white-space:pre-wrap}
+.post-tag{display:inline-block;font-size:10px;color:var(--orange);background:var(--orange-light);padding:2px 6px;border-radius:3px;margin-bottom:8px}
+.options-list{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.option-btn{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;font-size:12px;text-align:left;cursor:pointer;transition:all .2s;line-height:1.5;font-family:inherit}
+.option-btn:hover{border-color:var(--orange);background:var(--orange-light);transform:translateX(3px)}
+.option-btn.warn{border-color:#ff4d4f;background:#fff1f0}
+.option-btn.warn:hover{border-color:#e6162d;background:#fff1f0}
+.effect-hint{display:block;font-size:9px;color:var(--text2);margin-top:2px}
+
+.ap-panel{background:var(--card);border-radius:10px;padding:14px;margin-bottom:8px}
+.ap-panel h3{font-size:13px;margin-bottom:10px}
+.ap-dots{display:flex;gap:4px;margin-bottom:12px}
+.ap-dot{width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .3s}
+.ap-dot.used{background:var(--orange);color:#fff}
+.ap-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ap-action-btn{border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;background:#fff;transition:all .2s;font-family:inherit}
+.ap-action-btn:hover{border-color:var(--orange);background:var(--orange-light)}
+.ap-action-btn .icon{font-size:16px;margin-bottom:2px}
+.ap-action-btn .label{font-size:10px}
+.ap-action-btn .effect{font-size:8px;color:var(--text2);margin-top:1px}
+
+.live-screen{min-height:100vh;background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;padding:20px 16px}
+.live-stage{text-align:center;padding:20px 0}
+.live-stage .stage-icon{font-size:44px;margin-bottom:10px}
+.live-stage h2{font-size:17px;margin-bottom:4px}
+.live-stage .crowd{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:14px}
+.live-feel{font-size:12px;line-height:1.8;color:rgba(255,255,255,0.7);max-width:300px;margin:0 auto 18px;white-space:pre-wrap}
+.live-options{display:flex;flex-direction:column;gap:8px}
+.live-options .option-btn{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#fff}
+.live-options .option-btn:hover{background:rgba(255,130,0,0.2);border-color:var(--orange)}
+
+.tekkai-screen{min-height:100vh;background:#1a1a2e;color:#fff}
+.tekkai-header{padding:14px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1)}
+.tekkai-header h2{font-size:15px;margin-bottom:2px}
+.tekkai-header p{font-size:10px;color:rgba(255,255,255,0.5)}
+.tekkai-idol{display:flex;align-items:center;padding:14px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.tekkai-idol-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f093fb,#f5576c);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tekkai-idol-info{margin-left:12px;flex:1}
+.tekkai-idol-info .iname{font-size:13px;font-weight:600}
+.tekkai-idol-info .iqueue{font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px}
+.ticket-shop{padding:12px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.ticket-shop h3{font-size:12px;margin-bottom:6px}
+.ticket-slider{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ticket-slider button{width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:14px;cursor:pointer;font-family:inherit}
+.ticket-slider .ticket-count{font-size:18px;font-weight:700;min-width:28px;text-align:center}
+.ticket-info{font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:6px}
+.ticket-shop .btn-buy{width:100%;padding:10px;border-radius:8px;border:none;background:var(--orange);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.ticket-shop .btn-buy:disabled{opacity:.4;cursor:not-allowed}
+.tekkai-dialogue{background:rgba(255,255,255,0.05);border-radius:10px;padding:14px;margin:10px;font-size:12px;line-height:1.7;white-space:pre-wrap;min-height: 54px;}
+.tekkai-options{padding:0 10px 40px;display:flex;flex-direction:column;gap:8px}
+.tekkai-options .option-btn{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#fff;font-size:11px}
+.tekkai-options .option-btn:hover{background:rgba(255,130,0,0.2);border-color:var(--orange)}
+
+.settlement-card{background:var(--card);border-radius:10px;padding:18px;margin:16px;text-align:center}
+.settlement-card h2{font-size:15px;margin-bottom:4px}
+.settlement-card .week-num{font-size:40px;font-weight:800;color:var(--orange)}
+.settlement-card .label{font-size:10px;color:var(--text2)}
+.money-display{display:flex;justify-content:center;gap:30px;margin:14px 0}
+.money-item .num{font-size:20px;font-weight:700}
+.money-item .lbl{font-size:10px;color:var(--text2)}
+.settle-detail{font-size:11px;color:var(--text2);line-height:1.7;margin-top:8px;text-align:left;padding:0 4px}
+
+.ending-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff}
+.ending-type{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:22px;padding:4px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:16px;display:inline-block}
+.ending-text{font-size:13px;line-height:2;max-width:360px;color:rgba(255,255,255,0.85);margin-bottom:30px;white-space:pre-wrap}
+.ending-stats{display:flex;gap:14px;margin-bottom:30px}
+.ending-stat .num{font-size:17px;font-weight:700}
+.ending-stat .lbl{font-size:9px;color:rgba(255,255,255,0.4)}
+.ending-title{font-size:22px;font-weight:800;margin-bottom:18px;color:var(--orange)}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:rgba(0,0,0,0.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:11px;z-index:200;transition:transform .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#2a2a3e;border-radius:12px;padding:18px;max-width:400px;width:90%;color:#cdd6f4;border:1px solid #45475a}
+.modal h3{font-size:14px;margin-bottom:10px}
+.modal p{font-size:11px;line-height:1.7;color:rgba(255,255,255,0.6)}
+.modal .btn-row{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+.modal .btn-row button{padding:6px 16px;border-radius:6px;border:none;font-size:11px;cursor:pointer;font-family:inherit}
+.btn-modal-ok{background:var(--orange);color:#fff}
+.btn-modal-cancel{background:rgba(255,255,255,0.08);color:#cdd6f4}
+@media(max-width:500px){.app{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal-overlay"><div class="modal" id="modal-content"></div></div>
+
+<!-- TITLE -->
+<div class="screen active" id="screen-title">
+<div class="title-screen">
+<h1>地下アイドルファン<br>シミュレーター</h1>
+<div class="jp">Underground Idol Fan Simulator</div>
+<div class="tagline">深夜两点，你刷到一条微博。转发量不高。<br>但视频里那个人唱完之后笑了——<br>台下有人喊她的名字，她愣了一下，<br>然后笑得更亮了。</div>
+<button class="btn-start" onclick="goToPrologue()">推し始める</button>
+<div class="credit">v0.3 · 偶像生活模拟包 姊妹篇</div>
+</div>
+</div>
+
+<!-- PROLOGUE -->
+<div class="screen" id="screen-prologue">
+<div class="prologue-screen">
+<div style="height:4px"></div>
+<div class="prologue-card">
+<h2>出会い</h2>
+<p>地下アイドル——地下偶像。不是在电视上看到的那种，是在Livehouse里，台下只有二三十个人，但台上的人笑得像有一万人在看。</p>
+<p>你点进那个人的主页。每周在回声Livehouse演出，演完有特典会。¥30一张券，一分钟。</p><p>你住在上海——这座城市每周有十几场地偶演出。就算你这周没刻意安排偶活，路过Livehouse也会忍不住进去看一场。这是地偶痴的宿命。</p>
+<p>评论区有人说：「今天台下多了一个人，开心。」</p>
+</div>
+<div class="prologue-card">
+<h2>あなたの推しは？</h2>
+<p style="margin-bottom:8px">选择你要推的成员（也可以自己填）：</p>
+<div class="idol-select" id="idol-select">
+<span class="idol-chip" data-name="小星" onclick="selectIdol(this,'小星')">⭐ 小星</span>
+<span class="idol-chip" data-name="娜娜" onclick="selectIdol(this,'娜娜')">🌸 娜娜</span>
+<span class="idol-chip" data-name="momo" onclick="selectIdol(this,'momo')">🐰 momo</span>
+<span class="idol-chip" data-name="柚子" onclick="selectIdol(this,'柚子')">🍊 柚子</span>
+<span class="idol-chip" data-name="七七" onclick="selectIdol(this,'七七')">💜 七七</span>
+</div>
+<input type="text" class="input-name" id="idol-custom" placeholder="或者自己输入推的名字…" maxlength="8" style="margin-top:8px" onfocus="clearIdolSelection()">
+</div>
+<div class="prologue-card">
+<h2>你的名字</h2>
+<input type="text" class="input-name" id="player-name" placeholder="你的昵称（微博名）" maxlength="10">
+</div>
+<div class="prologue-card">
+<h2>你的身份</h2>
+<div class="identity-options" id="identity-options">
+<div class="identity-card" data-id="student" onclick="selectIdentity(this)"><h3>学生</h3><p>生活费里省出来的，时间多但钱少</p><span class="tag tag-student">周入¥240 · 4行动点 · 1点强制学业</span></div>
+<div class="identity-card" data-id="worker" onclick="selectIdentity(this)"><h3>社畜</h3><p>工资到账先切券，有钱但没时间</p><span class="tag tag-worker">周入¥560 · 2行动点 · 无强制</span></div>
+<div class="identity-card" data-id="fullfan" onclick="selectIdentity(this)"><h3>全职追地偶</h3><p>辞了工作/休了学，推し是生活全部</p><span class="tag tag-full">周入¥120 · 6行动点 · 高初始沉迷</span></div>
+</div>
+</div>
+<button class="btn-confirm" id="btn-confirm-prologue" onclick="confirmPrologue()" disabled>入坑</button>
+</div>
+</div>
+
+<!-- MAIN GAME -->
+<div class="screen" id="screen-main">
+<div class="main-header">
+<div class="main-header-top">
+<div class="avatar" id="main-avatar">?</div>
+<div class="header-info"><div class="name" id="main-name">玩家</div><div class="oshi" id="main-oshi"></div></div>
+<div class="header-action"><div class="week-badge" id="main-week">第1周</div><div id="main-phase">事件</div></div>
+</div>
+<div class="stats-bar">
+<div class="stat-pill"><div class="icon">💰</div><div class="info"><div class="label">存款</div><div class="value" id="val-money">500</div><div class="bar"><div class="bar-inner bar-money" id="bar-money" style="width:50%"></div></div></div></div>
+<div class="stat-pill"><div class="icon">🔥</div><div class="info"><div class="label">沉迷度</div><div class="value" id="val-obs">20</div><div class="bar"><div class="bar-inner bar-obs" id="bar-obs" style="width:20%"></div></div></div></div>
+<div class="stat-pill"><div class="icon">💕</div><div class="info"><div class="label">关系值</div><div class="value" id="val-rel">5</div><div class="bar"><div class="bar-inner bar-rel" id="bar-rel" style="width:5%"></div></div></div></div>
+<div class="stat-pill"><div class="icon">🏫</div><div class="info"><div class="label">现充值</div><div class="value" id="val-real">60</div><div class="bar"><div class="bar-inner bar-real" id="bar-real" style="width:60%"></div></div></div></div>
+</div>
+</div>
+<div class="content-area" id="main-content"></div>
+</div>
+
+<!-- LIVE -->
+<div class="screen" id="screen-live">
+<div class="live-screen"><div class="live-stage">
+<div class="stage-icon">🎤</div><h2 id="live-title">Live演出</h2>
+<div class="crowd" id="live-crowd"></div><div class="live-feel" id="live-feel"></div>
+<div class="live-options" id="live-options"></div>
+</div></div>
+</div>
+
+<!-- TEKKAI -->
+<div class="screen" id="screen-tekkai">
+<div class="tekkai-screen">
+<div class="tekkai-header"><h2>特典会</h2><p>演出结束 · Livehouse后台</p></div>
+<div class="tekkai-idol">
+<div class="tekkai-idol-avatar" id="tekkai-idol-avatar">⭐</div>
+<div class="tekkai-idol-info"><div class="iname" id="tekkai-idol-name">推し</div><div class="iqueue" id="tekkai-queue">前面还有 3 人</div></div>
+</div>
+<div class="ticket-shop">
+<h3>🎫 特典券 · ¥30/张</h3>
+<div class="ticket-slider">
+<button onclick="changeTickets(-5)">-5</button><button onclick="changeTickets(-1)">-1</button>
+<span class="ticket-count" id="ticket-count">1</span>
+<button onclick="changeTickets(1)">+1</button><button onclick="changeTickets(5)">+5</button>
+</div>
+<div class="ticket-info">余额: ¥<span id="ticket-balance">0</span> · 你会切 <span id="ticket-units">1</span> 张</div>
+<button class="btn-buy" id="btn-buy-tickets" onclick="buyTickets()">💬 切券</button>
+</div>
+<div class="tekkai-dialogue" id="tekkai-dialogue"></div>
+<div class="tekkai-options" id="tekkai-options"></div>
+</div>
+</div>
+
+<!-- SETTLEMENT -->
+<div class="screen" id="screen-settlement">
+<div style="padding-top:28px">
+<div class="settlement-card">
+<div class="label">本周结算</div><div class="week-num" id="settle-week">1</div>
+<div style="height:10px"></div>
+<div class="money-display">
+<div class="money-item"><div class="num" id="settle-spent">0</div><div class="lbl">本周花费</div></div>
+<div class="money-item"><div class="num" id="settle-balance">0</div><div class="lbl">剩余存款</div></div>
+</div>
+<div class="settle-detail" id="settle-text"></div>
+</div>
+<div style="padding:0 16px"><button class="btn-confirm" onclick="nextWeek()" style="width:100%;margin:0">进入下周</button></div>
+</div>
+</div>
+
+<!-- ENDING -->
+<div class="screen" id="screen-ending">
+<div class="ending-screen">
+<div class="ending-type" id="ending-type">结局类型</div>
+<h1 class="ending-title" id="ending-title">结局标题</h1>
+<div class="ending-text" id="ending-text"></div>
+<div class="ending-stats">
+<div class="ending-stat"><div class="num" id="end-money">0</div><div class="lbl">剩余存款</div></div>
+<div class="ending-stat"><div class="num" id="end-obs">0</div><div class="lbl">沉迷度</div></div>
+<div class="ending-stat"><div class="num" id="end-rel">0</div><div class="lbl">关系值</div></div>
+</div>
+<button class="btn-start" onclick="location.reload()">もう一度推す</button>
+</div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ==================== GAME STATE ====================
+const GS = {
+  name:'', oshi:'', identity:'', week:1, phase:'prologue',
+  money:500, obsession:20, relation:5, realLife:60,
+  idolMental:65, weekSpent:0, ticketsBought:0,
+  flags:{
+    gameOver:0, firstLive:0, wechatAsked:0, wechatGot:0, wechatExposed:0,
+    banned:0, exposedByPeer:0, revealedOnBoard:0, idolDepression:0,
+    brokeCount:0, obsessiveActs:0, healthyActs:0,
+    friendIntervention:0, teacherIntervention:0, parentDiscover:0,
+    boundaryCrossed:0, idolUncomfortable:0, idolWantsFriend:0,
+    oshiGraduated:0, yearsWaited:0, endRoute:''
+  },
+  apUsed:0, apAlloc:{work:0,ota:0,realLife:0,parttime:0},
+  currentEvent:null, pendingTickets:1, tekkaiOptions:[], tekkaiDialogueHistory:[]
+};
+
+const IDOL_PRESETS = {
+  '小星':{emoji:'⭐',color:'linear-gradient(135deg,#667eea,#764ba2)',story:'新人地偶，刚入圈三个月'},
+  '娜娜':{emoji:'🌸',color:'linear-gradient(135deg,#f093fb,#f5576c)',story:'团内ACE，跳舞很强'},
+  'momo':{emoji:'🐰',color:'linear-gradient(135deg,#4facfe,#00f2fe)',story:'软妹系，MC很会撒娇'},
+  '柚子':{emoji:'🍊',color:'linear-gradient(135deg,#fa709a,#fee140)',story:'酷酷的，不太说话但唱歌好听'},
+  '七七':{emoji:'💜',color:'linear-gradient(135deg,#a8edea,#fed6e3)',story:'神秘系，微博营业很少'}
+};
+
+const IDENTITY_CFG = {
+  student:{name:'学生',income:240,ap:4,forced:1,forcedLabel:'学业',forcedIcon:'📚',obsStart:15,moneyStart:400},
+  worker:{name:'社畜',income:560,ap:3,forced:1,forcedLabel:'工作',forcedIcon:'💼',obsStart:20,moneyStart:800},
+  fullfan:{name:'全职追地偶',income:120,ap:6,forced:0,forcedLabel:'',forcedIcon:'',obsStart:35,moneyStart:300}
+};
+
+// ==================== ENDINGS (12, balanced) ====================
+const ENDINGS = {
+  sunshineFriend:{title:'阳光下的朋友',type:'特殊结局',
+    text:'那天特典会结束后，她在给你拍立得签名的背面写了一行字：\n「下次好好跟你说，最近staff严。」\n\n你觉得隐隐有什么事情要发生——结果下一周，你收到了事务所的出禁通知。\n你懵了。什么意思？你要被禁止入场了？你做错了什么？\n但紧接着她的私信来了。\n\n她发了好几条，语气又急又快：\n「我已经和PD强烈反对她这种无视人权的行为和我跟她说过了我根本不想当偶像了没有理由你是最后一个才排到你的那件事你懂吗所以后来我说我要出禁你我和PD说我讨厌你我不想再看见你了。」\n\n你看了三遍才理解她的逻辑：\n她想和你做朋友——但偶像不能和粉丝做朋友。\n所以她要让PD把你出禁。出禁了，你就不是她的粉丝了。\n不是粉丝了，就可以做朋友了。\n\n这个逻辑正常人类不可能理解，但你理解了。\n\n你们开始在Livehouse以外的世界见面。便利店、深夜的麦当劳、她排练结束后的地铁站。\n只是聊天。聊她不想当偶像了，聊你不知道未来要干嘛。\n你觉得这大概就是朋友。\n\n但有人看到了。地铁站、便利店、甚至她发微博的定位——OTA圈子里有人拼出了时间线，投稿到了揭示板。\n「某现役地偶与已出禁粉丝私下交往——出禁是不是为了掩人耳目？」\n\n帖子炸了。评论区有人骂她，有人骂你，有人逐帧分析。\n她的下一场Live，台下空了一半。PD把她叫去谈了很久。\n\n你最后一次见她的时候，是在她租的那间小公寓楼下。\n她瘦了很多。"我好像得了抑郁症。"她笑了笑，没看你。\n"那个揭示板的投稿……我有时候想，如果当时没有出禁你——"\n她没说完。\n\n风很大。你们站在楼下，谁都没动。\n后来她的微博再也没更新过。\n\n揭示板上，那条帖子偶尔还会被人顶上来。\n每被顶上来一次，你就做一整夜的噩梦。'},
+  doubleExposure:{title:'揭示板',type:'Bad End',
+    text:'加了微信之后，一切好像都很顺利。\n她偶尔会回你消息。你会去看她的每一场Live。\n没有其他人知道。你觉得这是只属于你们两个人的秘密。\n\但你忘了——地偶OTA圈子里没有秘密。有人注意到她在特典会上对你笑的方式不太一样。有人翻出了你每次切券的记录。有人在你微博点赞里找到了她的每一条。\n有人注意到她在特典会上对你笑的方式不太一样。\n有人翻出了你每次切券的记录和金额。\n有人在深夜的便利店门口看到你们站在一起。\n有人截了你们在微博互动的时间——每次她发博，你永远第一个点赞。\n那个帖子发在揭示板上的时候，附了九张图。\n聊天记录、特典会照片、便利店监控的模糊截图。\n「某地偶与OTA私联实锤，附完整时间线与物证」。\n\她的PD发了公告。她暂停活动。\n你的微博被人肉。有人私信你：「爽吗？」\n\她再也没有给你发过消息。\n你注销了微博。注销了微信。注销了一切。\n但那个帖子还在。每过几个月就有人顶上来。'},
+    graduateLove:{title:'毕业后的来信',type:'特殊结局',
+    text:'她毕业之后，你没有再追新的地偶。\n日子就这样过去了。\n你工作了，换了城市，偶尔在深夜刷到地下偶像的视频，会想起几年前Livehouse里的灯光。\n\n有一天你收到一条私信。\n是她发的。\n「好久不见。我在你附近的城市演出。如果你还在的话，来看看吧。」\n\n你去了。她不是偶像了——染了头发，穿了普通衣服，坐在Livehouse外面的台阶上。\n看到你的时候，她笑了一下。和四年前一样。\n「你来了啊。」\n「嗯。」\n你们就那样坐在台阶上，聊了很久。\n不是偶像和粉丝。是两个很久没见的人。'},
+marriageHE:{title:'婚姻届',type:'HE结局',
+    text:'她毕业后的第四年，你收到了一封邮件。\n不是私信，不是微博——是邮件。很正式的那种。\n\n「好久不见。有个东西想给你看看。」\n附件是一张照片：区役所的婚姻届。\n证人栏是空的。\n\n你盯着屏幕看了很久。然后打了电话给她。\n「你认真的？」\n「不然呢。」她在电话那边笑了——和四年前在Livehouse里的笑一模一样。\n\n你想起第一次在台下看到她，想起切了五十张券只为了多聊几分钟，想起她毕业那天你在人群里鼓掌。想起毕业之后你没有再追新的地偶——不是刻意，是没有必要。\n\n你们在区役所交了那张纸。\n没有婚礼。没有公开。只是两个人在签字之后，站在区役所门口的阳光下，她拉了一下你的手。\n\n「你还记得吗——以前在特典会上，你总说\'下周也来\'。」\n「记得。」\n「现在不用等下周了。」\n\n阳光很好。你觉得这四年，很值。'},
+  streamerReunion:{title:'另一个时空的相遇',type:'HE结局',
+    text:'她毕业之后，你偶尔还会刷到她——不是在Livehouse，是在直播间。\n她做起了带货主播。不是那种喊麦的，是很认真地讲产品——毕竟当了那么久偶像，表达能力比普通人强太多了。\n\n那天你无意间刷进了她的直播间。在线人数不多，几十个。\n她正在讲一盒面膜，语气认真又温柔。\n你看了很久。然后下单了。\n\n付款成功后你发了一条弹幕：\n「好想你。」\n\n她愣了一下。念弹幕的手停住了。\n然后她笑了——不是营业的笑，是真的认出了你的ID。\n「这个ID……是你吗？」\n\n你没有再发弹幕。但你看到她眼眶红了。\n她深呼吸了一下，对着镜头说：\n「谢谢宝宝的支持！爱你！」\n\n直播间里其他人以为是普通互动。\n但你知道她在对谁说。\n\n直播结束后，她发了一条微博：\n「今天在直播间遇到一个很久没见的人。\n本来以为这辈子不会再联系了。\n谢谢你还在。\n我真的好开心。」\n\n你看到了。点了个赞。\n没有评论，没有私信。\n\n有些人在Livehouse里相遇，在特典会上告别，\n在直播间里重逢——\n这大概就是另一个时空的相遇吧。'},
+      fired:{title:'最后一次特典会',type:'隐藏结局',
+    text:'那天你被叫进了主管办公室。\n「最近业绩下滑太严重了。我们觉得你可能不太适合这个岗位。」\n\n你拿着纸箱走出公司大楼的时候，第一个想到的不是房租，不是下个月怎么过——\n是今天周三，后天有Live。\n\n你没有告诉任何人。继续去Livehouse，继续切券。\n但钱快花完了。你开始借钱。欠了朋友，欠了信用卡。\n你告诉自己没关系，只要还能在台下看到她笑。\n\n有一天晚上，你喝了很多酒。对着手机里她的照片哭了很久。\n你打开微博，给她发了一条很长的私信——不是告白，是求救。\n你写了你的工作、你的欠款、你的崩溃。\n最后一句是：「我不知道还能撑多久。」\n\n私信显示已读。但没有回复。\n你理解——地偶不能回私信。这是规则。\n\n第二天一早，你收到了一条评论提醒。\n是她。在你前几天发的一条普通微博下面。\n\n「我看到了你的私信。我不知道能不能帮到你，但我想说几句话。\n\n你每次来Livehouse，都站在第一排。风雨无阻。\n我记住了你的脸，不是因为你是OTA——\n是因为你让我觉得，有人在认真地听我唱歌。\n那种感觉对一个地下偶像来说，比什么都珍贵。\n\n所以请你一定一定不要放弃。\n工作丢了可以再找。钱欠了可以慢慢还。\n但你不能倒下。因为还有人需要你。\n你的朋友、你的家人——还有我。\n我还在台上。如果你不来了，第一排会空着的。\n\n你不是一个人。你从来没有一个人过。\n记住这一点。」\n\n你坐在床上把那几条评论看了很多遍。\n然后你洗了脸，打开了招聘网站。\n\n后来你找到了一份新工作。普通，稳定。\n工作之余，你偶尔还会去Livehouse，但不是每周都去了。\n你站在后排，远远地看着她。\n她唱完的时候，你会鼓掌——和所有人一起。\n\n那条私信记录你还留着。\n她的评论截图你也存了。\n有时候半夜翻出来读一遍——\n不是为了回忆她，是为了提醒自己：\n最难的时候，有人拉了你一把。\n你要好好活着。'},
+warekita:{title:'酒馆成了打卡点',type:'特殊结局',
+    text:'微博小号上，她的话比Livehouse里多得多。\n聊排练、聊PD、聊不想当偶像了。\n有一天她说：「有家酒馆的梅酒很好喝。每次路过都想进去。」\n\n你说：「要不要一起去。」\n她秒回：「我来袭。」\n\n你们约在那家酒馆。她戴了口罩和帽子，你说「你这样更显眼」，她笑了。\n你们喝了酒，聊了很多。散场的时候她说渴了，你们又去便利店买水。\n站在便利店门口，她拧不开瓶盖，你帮她拧。\n\n有人在马路对面拍了照。\n第二天，揭示板上出现了一个帖子：\n「某现役地偶与OTA深夜便利店私会。附图。」\n照片里是你帮她拧瓶盖的侧影，还有酒馆里你们并肩坐着碰杯的合照——拍得很清楚，连桌上两杯梅酒都一清二楚。\n\n评论区炸了。\n她的微博私信爆了。她发了一大段话给你——\n语音一条接一条，又急又凶：\n「都是你！都是你非要去喝酒！\n你知道现在超话里怎么说我吗？\n你非得搞这出是不是？！\n我好好的偶像生涯全被你毁了！」\n\n你听着语音，一句话也说不出来。\n她最后说了一句：「别再联系我了。」\n\n但故事没有到此结束。\n那条揭示板帖子下面，有人开始玩梗：「姿势不错，我也来一张。」\n越来越多的OTA跑到那家酒馆，用你们合照里同样的姿势拍照打卡——两杯梅酒、并肩坐着。\n酒馆老板灵机一动，推出了「私联打卡套餐」——两杯梅酒+同款座位+拍立得一张，¥88。\n套餐卖爆了。\n你不知道该哭还是该笑。\n\n那家酒馆后来成了地偶OTA的打卡圣地。墙上贴满了模仿你们姿势的照片。\n但你那张原版，早就被埋在最下面了。\n\n后来你听说她提前毕业了。\n她的最后一场Live你没有去。你不敢去。\n\n那瓶矿泉水的瓶子你还留着。放在抽屉最里面。\n偶尔半夜打开抽屉看到，你会想——\n如果那天没说「要不要一起去」，\n现在是不是还能每周在第一排看她笑。'},
+broke:{title:'破产',type:'Bad End',
+    text:'你看着银行卡余额：¥2.47。\n下一场Live在后天。特典券¥30一张。\n你打开借呗。犹豫了很久。\n最后还是借了。\n下周的Live她笑得很开心。你也在笑。\n但手机收到还款提醒的时候，你笑不出来了。'},
+  stalker:{title:'出禁',type:'Bad End',
+    text:'她的staff给你发了一条私信：\n"请不要再来了。你已被列入禁止入场名单。"\n你看着屏幕，不知道该说什么。\n你只是想离她更近一点。\n但你和台上那个人之间，本来隔着一个舞台。'},
+  obsession:{title:'边界之外',type:'Bad End',
+    text:'你开始数她和其他OTA聊了几分钟。\n你开始觉得，她应该更喜欢你才对。\n有一天你站在Livehouse门口等她下班。\n她看到你的时候，往后退了一步。\n那个后退，比什么都疼。'},
+  healthyDistance:{title:'恰到好处的距离',type:'好结局',
+    text:'她毕业那天，你站在人群里鼓掌。\n她朝观众席挥手的时候，你觉得这样就够了。\n你留了一张她第一次Live的拍立得。\n不是爱情，不是幻想——就是一段很珍贵的记忆。\n你合上手机，去赴朋友的约。'},
+  trueBond:{title:'真正的羁绊',type:'隐藏结局',
+    text:'最后一期特典会，你只切了一张券。\n她看到你的时候，愣了一下："你每次都来……今天怎么了？"\n你说："今天就想看看你。"\n她笑了——不是营业的笑，是真的那种。\nStaff来催的时候，她说："再等一下。"\n后来她在微博写了一句：\n"有些OTA，来了就再也没走。我记住了。"'},
+  realityReturn:{title:'现充回归',type:'中立结局',
+    text:'朋友约你吃饭，你说"这周有Live"。\n朋友说"你已经三周没来了"。\n你想了想，说"那下周吧"。\n下周你没有去Live。\n不是因为不喜欢她了——只是台上的光再亮，也照不到你自己的生活。'},
+  parentFound:{title:'被发现的那天',type:'特殊结局',
+    text:'你妈翻了你手机。看到转账记录和特典会照片。\n"这几个月你在干嘛？"\n你没有回答。\n她把手机放回桌上，说了一句：\n"你要是喜欢，就好好喜欢。别把生活费都搭进去。"\n你愣住了。然后哭了。'},
+  ordinaryFan:{title:'一个普通OTA',type:'普通结局',
+    text:'三个月过去了。她还是那个她，你还是那个你。\nLivehouse里还是二十几个人。\n你每次来，切两三张券，聊两句，然后坐地铁回家。\n没有什么特别的。\n但每次散场后坐在地铁上，你都会想起她笑的样子。\n这就够了。'},
+  graduation:{title:'推しの卒業',type:'好结局',
+    text:'最后一场Live，她唱完说"我要毕业了"。\n台下有人哭，有人喊"不要走"。\n你没有喊。你只是用力鼓掌。\n散场后你给她写了一封很长的私信，然后删掉了。\n有些话不需要被看到。\n谢谢你。这三个月，我过得很好。'}
+};
+
+// ==================== UTILS ====================
+function $(id){return document.getElementById(id)}
+function showScreen(id){
+  if(GS.flags.gameOver && id!=='screen-ending') return;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+function updateStats(){
+  GS.money=Math.max(0,GS.money);GS.obsession=clamp(GS.obsession,0,100);
+  GS.relation=clamp(GS.relation,0,100);GS.realLife=clamp(GS.realLife,0,100);
+  GS.idolMental=clamp(GS.idolMental,0,100);
+  $('val-money').textContent=GS.money;$('val-obs').textContent=GS.obsession;
+  $('val-rel').textContent=GS.relation;$('val-real').textContent=GS.realLife;
+  $('bar-money').style.width=(GS.money/10)+'%';$('bar-obs').style.width=GS.obsession+'%';
+  $('bar-rel').style.width=GS.relation+'%';$('bar-real').style.width=GS.realLife+'%';
+  const ob=$('bar-obs');ob.classList.remove('warning','danger');
+  if(GS.obsession>80)ob.classList.add('danger');else if(GS.obsession>50)ob.classList.add('warning');
+  $('main-avatar').textContent=GS.name?GS.name[0]:'?';
+  $('main-name').textContent=GS.name||'OTA';$('main-oshi').textContent='推し: '+(GS.oshi||'?');
+  $('main-week').textContent='第'+GS.week+'周';
+  // instant death checks
+  if(GS.money<=0&&GS.flags.brokeCount>=3&&!GS.flags.gameOver){triggerEnding('broke');return}
+  if(GS.flags.banned&&GS.flags.idolWantsFriend&&GS.flags.revealedOnBoard&&!GS.flags.gameOver){triggerEnding('sunshineFriend');return}
+}
+
+function changeStats(delta){
+  if(!delta)return;
+  if(delta.money)GS.money+=delta.money;
+  if(delta.obsession)GS.obsession+=delta.obsession;
+  if(delta.relation)GS.relation+=delta.relation;
+  if(delta.realLife)GS.realLife+=delta.realLife;
+  if(delta.idolMental)GS.idolMental+=delta.idolMental;
+  if(delta.healthyActs)GS.flags.healthyActs+=delta.healthyActs;
+  if(delta.obsessiveActs)GS.flags.obsessiveActs+=delta.obsessiveActs;
+  if(delta.boundaryCrossed)GS.flags.boundaryCrossed+=delta.boundaryCrossed;
+  if(delta.idolUncomfortable)GS.flags.idolUncomfortable+=delta.idolUncomfortable;
+  if(delta.parentDiscover)GS.flags.parentDiscover=delta.parentDiscover;
+  updateStats();
+}
+
+// ==================== FLOW ====================
+function goToPrologue(){resetGS();showScreen('screen-prologue');}
+
+function resetGS(){
+  GS.name='';GS.oshi='';GS.identity='';GS.week=1;GS.phase='prologue';
+  GS.money=500;GS.obsession=20;GS.relation=5;GS.realLife=60;
+  GS.idolMental=65;GS.weekSpent=0;GS.ticketsBought=0;
+  GS.flags={gameOver:0,firstLive:0,wechatAsked:0,wechatGot:0,wechatExposed:0,banned:0,exposedByPeer:0,revealedOnBoard:0,idolDepression:0,brokeCount:0,obsessiveActs:0,healthyActs:0,friendIntervention:0,teacherIntervention:0,bossIntervention:0,parentDiscover:0,_jobWarned:0,boundaryCrossed:0,idolUncomfortable:0,idolWantsFriend:0,oshiGraduated:0,yearsWaited:0,proposedPrivate:0,weiboAlt:0,weiboAltChat:0,barDate:0,barDateExposed:0,blamed:0,contactAfterGrad:0,_burnerModalShown:0,_barModalShown:0,_jobWarned:0,endRoute:''};
+  GS.apUsed=0;GS.apAlloc={work:0,ota:0,realLife:0,parttime:0};
+  GS.currentEvent=null;GS.pendingTickets=1;GS.tekkaiOptions=[];GS.tekkaiDialogueHistory=[];
+  selectedIdentity='';selectedIdol='';
+  $('btn-confirm-prologue').disabled=true;
+  document.querySelectorAll('.idol-chip').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.identity-card').forEach(c=>c.classList.remove('selected'));
+}
+
+let selectedIdentity='', selectedIdol='';
+function selectIdentity(el){
+  document.querySelectorAll('.identity-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); selectedIdentity=el.dataset.id;
+  checkPrologueReady();
+}
+function selectIdol(el,name){
+  document.querySelectorAll('.idol-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); selectedIdol=name;$('idol-custom').value='';
+  checkPrologueReady();
+}
+function clearIdolSelection(){
+  document.querySelectorAll('.idol-chip').forEach(c=>c.classList.remove('selected'));
+  selectedIdol=''; checkPrologueReady();
+}
+function checkPrologueReady(){
+  const customName=$('idol-custom').value.trim();
+  $('btn-confirm-prologue').disabled=!(selectedIdentity && (selectedIdol||customName));
+}
+$('idol-custom').addEventListener('input',function(){
+  if(this.value.trim()){document.querySelectorAll('.idol-chip').forEach(c=>c.classList.remove('selected'));selectedIdol='';}
+  checkPrologueReady();
+});
+
+function confirmPrologue(){
+  const name=$('player-name').value.trim(); if(!name){toast('请输入昵称');return}
+  if(!selectedIdentity){toast('请选择身份');return}
+  const customName=$('idol-custom').value.trim();
+  const oshi=selectedIdol||customName;
+  if(!oshi){toast('请选择或输入推的名字');return}
+  GS.name=name;GS.oshi=oshi;GS.identity=selectedIdentity;
+  const cfg=IDENTITY_CFG[selectedIdentity];
+  GS.obsession=cfg.obsStart;GS.money=cfg.moneyStart;
+  showScreen('screen-main');updateStats();startWeek();
+}
+
+function startWeek(){
+  if(GS.flags.gameOver)return;
+  GS.phase='event';GS.apUsed=0;GS.apAlloc={work:0,ota:0,realLife:0,parttime:0};
+  GS.weekSpent=0;GS.ticketsBought=0;
+  showScreen('screen-main');updateStats();renderEventPhase();
+  const cfg=IDENTITY_CFG[GS.identity];
+  GS.money+=cfg.income;
+  if(GS.week>1)toast('本周收入 +¥'+cfg.income);
+  // Intervene if real-life value low
+  if(GS.realLife<=25 && GS.flags.friendIntervention===0 && GS.week>=5){
+    GS.flags.friendIntervention=1;
+  }
+  if(GS.realLife<=15 && GS.flags.teacherIntervention===0 && GS.flags.bossIntervention===0 && GS.week>=7){
+    if(GS.identity==='worker') GS.flags.bossIntervention=1; else GS.flags.teacherIntervention=1;
+  }
+  if(GS.realLife<=10 && GS.flags.parentDiscover===0 && GS.week>=9){
+    GS.flags.parentDiscover=1;
+  }
+}
+
+// ==================== WEEK EVENTS ====================
+function getEvent(){
+  const w=GS.week; const o=GS.oshi; const r=GS.relation; const ob=GS.obsession;
+
+  // ---- Week 1: Discover ----
+  if(w===1)return{
+    id:'w1',scenes:[
+      {speaker:o,text:'（微博）「明天Livehouse见哦~今天练了新舞！」\n评论3条，转发1次。',time:'周四'},
+    ],options:[
+      {text:'点赞并评论：「加油！明天去！」',effect:{obsession:3,relation:1},hint:'沉迷+3 · 关系+1',next:'action'},
+      {text:'点赞，不评论',effect:{obsession:1},hint:'沉迷+1',next:'action'},
+      {text:'转发评论：「这个新人好可爱」',effect:{obsession:5,relation:2},hint:'沉迷+5 · 关系+2',next:'action'}
+    ]};
+
+  // ---- Week 2: Idol noticed you ----
+  if(w===2)return{
+    id:'w2',scenes:[
+      {speaker:o,text:'（微博）「昨天台下好像多了一个人，一直在第一排。谢谢你。」',time:'周一'},
+    ],options:[
+      {text:'回复：「是我！你唱得好好听！」',effect:{obsession:4,relation:3},hint:'沉迷+4 · 关系+3',next:'action'},
+      {text:'不回复，默默开心',effect:{obsession:2},hint:'沉迷+2',next:'action'},
+      {text:'转发：「来看你是每周最重要的事」',effect:{obsession:7,relation:2},hint:'沉迷+7 · 关系+2',next:'action'}
+    ]};
+
+  // ---- Week 3: Gift temptation ----
+  if(w===3)return{
+    id:'w3',scenes:[
+      {speaker:o,text:'（微博）「项链坏了，有人推荐便宜好看的吗~」',time:'周三'},
+      {speaker:'你的内心',text:'（你知道她上周演出戴的就是普通银链子。你购物车里刚好有一条两百块的。）',time:'周三'},
+    ],options:[
+      {text:'买下来，特典会的时候送给她',effect:{obsession:8,relation:5,money:-200},flag:{gift:200},hint:'消耗¥200 · 沉迷+8 · 关系+5',next:'action'},
+      {text:'评论推荐几个平价牌子',effect:{obsession:1,relation:1},hint:'关系+1',next:'action'},
+      {text:'不参与——送礼物是越界',effect:{healthyActs:1},hint:'健康行为+1',next:'action'}
+    ]};
+
+  // ---- Week 4: Friend intervenes ----
+  if(w===4)return{
+    id:'w4',scenes:[
+      {speaker:'朋友',text:'「你最近微博怎么全是那个地偶？出来吃饭啊。三周没见了。」',time:'周五'},
+    ],options:[
+      {text:'「这周有Live，改天吧」',effect:{realLife:-5,obsession:3},hint:'现充-5 · 沉迷+3',next:'action'},
+      {text:'「好啊，老地方」',effect:{realLife:8,obsession:-3,healthyActs:1},hint:'现充+8 · 沉迷-3',next:'action'},
+      {text:'「你不懂，这是精神寄托」',effect:{realLife:-10,obsession:6},hint:'现充-10 · 沉迷+6',next:'action'}
+    ]};
+
+  // ---- Week 5: Performance pressure ----
+  if(w===5)return{
+    id:'w5',scenes:[
+      {speaker:'OTA群',text:'「这周'+o+'的数据好像不太好，特典券卖得比上周少。PD那边压力很大。」',time:'周六'},
+    ],options:[
+      {text:'「这周我切二十张！不能让PD压她」',effect:{obsession:8},flag:{pledge:20},hint:'承诺切20张（消耗¥600）',next:'action'},
+      {text:'「量力而行，大家」',effect:{healthyActs:1},hint:'健康行为+1',next:'action'},
+      {text:'不说话——这不是我的义务',effect:{},hint:'无变化',next:'action'}
+    ]};
+
+  // ---- Week 6: Idol seems tired ----
+  if(w===6)return{
+    id:'w6',scenes:[
+      {speaker:o,text:'（微博）没有发文字。只发了一张图片：后台的镜子，镜子里能看到她眼睛有点红。',time:'周日'},
+    ],options:[
+      {text:'评论：「注意休息，不用每条都回」',effect:{obsession:2,idolMental:3},hint:'推的心理+3',next:'action'},
+      {text:'评论：「偶像请保持状态，你代表的是团体」',effect:{idolMental:-5,relation:-3},hint:'推的心理-5 · 关系-3',next:'action'},
+      {text:'不评论，这是她自己的事',effect:{},hint:'无变化',next:'action'}
+    ]};
+
+  // ---- Week 7: OTA circle conflict ----
+  if(w===7)return{
+    id:'w7',scenes:[
+      {speaker:'OTA圈子',text:'另一个OTA在你的每条评论下面掐架。\n「你们这帮前管真是讨厌，霸着杆位不让，别人想看自己推不能让让？」',time:'周四'},
+    ],options:[
+      {text:'回怼：「我每天很早就来排队，VIP票我也抢了，你行你也来啊？」',effect:{obsession:5,realLife:-4},hint:'沉迷+5 · 现充-4',next:'action'},
+      {text:'私信和解：「对不起，下次我会注意的」',effect:{realLife:2,healthyActs:1},hint:'现充+2',next:'action'},
+      {text:'无视其他人的想法',effect:{},hint:'无变化',next:'action'}
+    ]};
+
+  // ---- Week 8: Friend confronts again / teacher notices ----
+  if(w===8){
+    const scenes=[],options=[];
+    if(GS.realLife<=25){
+      scenes.push({speaker:GS.identity==='worker'?'上司':'老师/辅导员',text:GS.identity==='worker'?'「最近状态不太对。好几次deadline都miss了。有什么困难吗？」':'「最近你状态不太对。好几次作业没交。有什么困难吗？」',time:'周三'});
+      options.push({text:'「……没什么，会注意的」',effect:{realLife:5,obsession:-4,healthyActs:1},hint:'现充+5 · 沉迷-4',next:'action'});
+      options.push({text:GS.identity==='worker'?'「……只是最近压力大」':'「跟您没关系」',effect:{realLife:-10,obsession:5},hint:'现充-10 · 沉迷+5',next:'action'});
+      options.push({text:'含糊过去',effect:{realLife:-2},hint:'现充-2',next:'action'});
+    }else{
+      scenes.push({speaker:o,text:'（微博）「最近有个OTA几乎每场都来……有点感动。」',time:'周三'});
+      options.push({text:'评论：「是我吗（笑）」',effect:{obsession:4,relation:5},hint:'沉迷+4 · 关系+5',next:'action'});
+      options.push({text:'不回复，但很开心',effect:{obsession:2},hint:'沉迷+2',next:'action'});
+      options.push({text:'评论：「别太在意，你值得更多人来看」',effect:{relation:3,idolMental:2},hint:'关系+3 · 推心理+2',next:'action'});
+    }
+    return{id:'w8',scenes,options};
+  }
+
+  // ---- Week 9: Idol's schedule conflict ----
+  if(w===9)return{
+    id:'w9',scenes:[
+      {speaker:o,text:'（微博）「这周外地演出和私人安排冲突了，好纠结……PD说这是重要的拼盘。」',time:'周三'},
+    ],options:[
+      {text:'评论：「去吧，我坐高铁去看你」',effect:{obsession:10,money:-200},hint:'消耗¥200 · 沉迷+10',next:'action'},
+      {text:'评论：「不管在哪都支持你」',effect:{obsession:2,idolMental:3},hint:'推心理+3',next:'action'},
+      {text:'不参与',effect:{},hint:'无变化',next:'action'}
+    ]};
+
+  // ---- Week 10: Financial crunch ----
+  if(w===10)return{
+    id:'w10',scenes:[
+      {speaker:'银行卡',text:'这个月你在地偶上花了超过 ¥'+(GS.flags._totalSpent||GS.weekSpent)+'。\n生活费还够吗？',time:'结算日'},
+    ],options:[
+      {text:'「大不了吃一个月泡面」',effect:{obsession:6},hint:'沉迷+6',next:'action'},
+      {text:'「……下周少切几张吧」',effect:{obsession:-3,healthyActs:1},hint:'沉迷-3',next:'action'},
+      {text:'借钱继续',effect:{obsession:10,money:400,obsessiveActs:1},hint:'借¥400 · 沉迷+10 · ⚠️危险',next:'action'}
+    ]};
+
+  // ---- Week 11: Self-reflection ----
+  if(w===11)return{
+    id:'w11',scenes:[
+      {speaker:'凌晨两点',text:'你发现自己越来越频繁地刷她的微博。\n等不到她发新内容的时候，你会焦虑。\n这不是一个好信号。',time:''},
+    ],options:[
+      {text:'「我就是喜欢推她，有什么问题」',effect:{obsession:10,obsessiveActs:1},hint:'沉迷+10',next:'action'},
+      {text:'「……确实该调整一下了」',effect:{obsession:-6,healthyActs:2},hint:'沉迷-6 · 健康行为+2',next:'action'},
+      {text:'给她微博发私信：「最近还好吗」',effect:{obsession:5,relation:2,boundaryCrossed:1},hint:'沉迷+5 · 关系+2',next:'action'}
+    ]};
+
+  // ---- Week 12: Staff warning / Parent discover ----
+  if(w===12){
+    if(GS.flags.boundaryCrossed>=2){
+      return{id:'w12',scenes:[
+        {speaker:'Staff',text:'（私信）「你好，注意到你最近的互动频率偏高。请保持适当距离。」',time:'周三'},
+      ],options:[
+        {text:'「对不起，我会注意」',effect:{obsession:-8,healthyActs:1},hint:'沉迷-8',next:'action'},
+        {text:'「我没有恶意」',effect:{obsession:3,boundaryCrossed:1},hint:'沉迷+3 · ⚠️边界+1',next:'action'},
+        {text:'不回复',effect:{obsession:5,boundaryCrossed:2},hint:'沉迷+5 · ⚠️⚠️边界+2',next:'action'}
+      ]};
+    }
+    if(GS.flags.parentDiscover===1 && GS.realLife<=15){
+      return{id:'w12',scenes:[
+        {speaker:'父母',text:'翻了你手机。看到了转账记录和特典会照片。\n「这三个月你在干嘛？钱花哪儿了？」',time:'周末'},
+      ],options:[
+        {text:'「这是我喜欢的东西」',effect:{obsession:5,realLife:-10,parentDiscover:2},hint:'现充-10',next:'action'},
+        {text:'「……对不起」',effect:{obsession:-5,realLife:5,healthyActs:2},hint:'沉迷-5 · 现充+5',next:'action'},
+        {text:'沉默',effect:{realLife:-5},hint:'现充-5',next:'action'}
+      ]};
+    }
+    // Fallback for week 12: Idol pre-final
+    return{id:'w12',scenes:[
+      {speaker:o,text:'（微博）「下周最后一场了。时间真快。」',time:'周日'},
+    ],options:[
+      {text:'评论：「三个月了……谢谢」',effect:{obsession:2,relation:3},hint:'关系+3',next:'action'},
+      {text:'不评论，默默决定下周多切几张',effect:{obsession:5},hint:'沉迷+5',next:'action'},
+      {text:'评论：「加油，最后一场我会去的」',effect:{relation:2},hint:'关系+2',next:'action'},
+    ]};
+  }
+
+  // ---- Week 13: Final ----
+  if(w===13)return{
+    id:'w13',scenes:[
+      {speaker:o,text:'（微博）「今天是最后一场了。谢谢大家三个月。」',time:'周日'},
+      {speaker:'你的内心',text:'（三个月。好像只是一眨眼。但你又觉得，这三个月比之前三年都长。）',time:'周日'},
+    ],options:[
+      {text:'去，切最后一张券',effect:{},hint:'',next:'tekkai'},
+    ]};
+  return null;
+}
+
+// ---- Event rendering ----
+function renderPostHeader(name,time){
+  const colors=['linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#4facfe,#00f2fe)','linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#fa709a,#fee140)'];
+  const idx=name.length%colors.length;
+  return '<div class="post-header"><div class="post-avatar" style="background:'+colors[idx]+'">'+name[0]+'</div><div class="post-meta"><div class="name">'+name+'</div><div class="time">'+(time||'刚刚')+'</div></div></div>';
+}
+
+function renderEventPhase(){
+  $('main-phase').textContent='第'+GS.week+'周 · 事件';
+  const evt=getEvent();if(!evt){renderActionPhase();return}
+  GS.currentEvent=evt;
+  let html='';
+  (evt.scenes||[]).forEach(s=>{
+    html+='<div class="weibo-post">'+renderPostHeader(s.speaker,s.time||'本周')+'<div class="post-body">'+s.text+'</div></div>';
+  });
+  html+='<div class="weibo-post"><div class="post-body" style="font-weight:600">你的选择：</div><div class="options-list">';
+  (evt.options||[]).forEach((o,i)=>{
+    const isDanger=o.flag&&(o.flag.boundaryCrossed||o.flag.obsessiveActs);
+    html+='<button class="option-btn'+(isDanger?' warn':'')+'" onclick="chooseOption('+i+')">'+o.text+(o.hint?'<span class="effect-hint">'+o.hint+'</span>':'')+'</button>';
+  });
+  html+='</div></div>';
+  $('main-content').innerHTML=html;
+}
+
+function chooseOption(idx){
+  if(GS.flags.gameOver)return;
+  const evt=GS.currentEvent;if(!evt)return;
+  const opt=evt.options[idx];
+  if(opt.effect)changeStats(opt.effect);
+  if(opt.flag){
+    if(opt.flag.gift){GS.weekSpent+=opt.flag.gift;GS.flags._totalSpent=(GS.flags._totalSpent||0)+opt.flag.gift}
+    if(opt.flag.pledge)GS.currentEvent._pledge=opt.flag.pledge;
+    if(opt.flag.healthyActs)GS.flags.healthyActs+=opt.flag.healthyActs;
+    if(opt.flag.obsessiveActs)GS.flags.obsessiveActs+=opt.flag.obsessiveActs;
+    if(opt.flag.boundaryCrossed)GS.flags.boundaryCrossed+=opt.flag.boundaryCrossed;
+    if(opt.flag.parentDiscover)GS.flags.parentDiscover=opt.flag.parentDiscover;
+  }
+  updateStats();
+  const next=opt.next||'action';
+  if(next==='action')renderActionPhase();
+  else if(next==='live')renderLivePhase();
+  else if(next==='tekkai'){showScreen('screen-tekkai');startTekkai();}
+  else renderActionPhase();
+}
+
+// ==================== ACTION PHASE ====================
+function renderActionPhase(){
+  if(GS.flags.gameOver)return;
+  GS.phase='action';$('main-phase').textContent='本周安排';
+  const cfg=IDENTITY_CFG[GS.identity];
+  const freeAP=cfg.ap-cfg.forced;
+  const forcedDone=GS.apAlloc.work;
+  const forcedRem=cfg.forced-forcedDone;
+  const freeUsed=GS.apAlloc.ota+GS.apAlloc.realLife+GS.apAlloc.parttime;
+  const freeRem=freeAP-freeUsed;
+  if(GS.currentEvent&&GS.currentEvent._pledge)GS.pendingTickets=GS.currentEvent._pledge;
+  let html='<div class="ap-panel"><h3>时间分配（'+cfg.forced+'强制 + '+freeAP+'自由）</h3><div class="ap-dots">';
+  for(let i=0;i<cfg.ap;i++){
+    const f=i<GS.apUsed;const isF=i<cfg.forced;
+    html+='<div class="ap-dot'+(f?' used':'')+'">'+(f?(isF?(cfg.forcedLabel||'必')[0]:'✓'):'')+'</div>';
+  }
+  html+='</div><div class="ap-actions">';
+  if(forcedRem>0)html+='<div class="ap-action-btn" onclick="allocAP(\'work\')"><div class="icon">'+(cfg.forcedIcon||'⏰')+'</div><div class="label">'+cfg.forcedLabel+'</div><div class="effect">强制 · 还需'+forcedRem+'点</div></div>';
+  if(freeRem>0){
+    html+='<div class="ap-action-btn" onclick="allocAP(\'ota\')"><div class="icon">🎶</div><div class="label">偶活</div><div class="effect">沉迷+5~10 · 关系+1~3</div></div>';
+    html+='<div class="ap-action-btn" onclick="allocAP(\'realLife\')"><div class="icon">🏫</div><div class="label">现实生活</div><div class="effect">现充+8~12 · 沉迷-3~5</div></div>';
+    html+='<div class="ap-action-btn" onclick="allocAP(\'parttime\')"><div class="icon">💵</div><div class="label">打工赚钱</div><div class="effect">存款+60~100</div></div>';
+  }
+  html+='<div class="ap-action-btn" style="border-color:transparent;cursor:default;background:var(--bg)"><div class="icon">📊</div><div class="label">已安排</div><div class="effect">'+(cfg.forcedLabel?cfg.forcedLabel+'×'+forcedDone+' ':'')+'偶活×'+GS.apAlloc.ota+' 生活×'+GS.apAlloc.realLife+' 打工×'+GS.apAlloc.parttime+'</div></div>';
+  html+='</div></div>';
+      if(GS.apUsed>=cfg.ap){
+            html+='<div style="padding:0 16px"><button class="btn-confirm" onclick="renderLivePhase()" style="width:100%;margin:0">完成安排，去Live</button></div>';
+          }
+    $('main-content').innerHTML=html;
+}
+
+function allocAP(type){
+  const cfg=IDENTITY_CFG[GS.identity];
+  if(GS.apUsed>=cfg.ap){toast('已分配完');return}
+  if(cfg.forced-GS.apAlloc.work>0&&type!=='work'){toast('请先完成'+cfg.forcedLabel);return}
+  GS.apUsed++;GS.apAlloc[type]++;
+  if(type==='ota'){GS.obsession+=randInt(5,10);GS.relation+=randInt(1,3)}
+  else if(type==='realLife'){GS.realLife+=randInt(8,12);GS.obsession-=randInt(3,5)}
+  else if(type==='parttime'){GS.money+=randInt(60,100)}
+  updateStats();renderActionPhase();
+}
+
+// ==================== LIVE ====================
+function renderLivePhase(){
+  if(GS.flags.gameOver)return;
+  GS.phase='live';$('main-phase').textContent='Live演出';
+  const fanCount=10+Math.floor(GS.relation/4)+randInt(-3,5);
+  const realCount=Math.max(5,fanCount);
+  GS.flags.firstLive++; const isFirst=GS.flags.firstLive<=1;
+  showScreen('screen-live');$('live-crowd').textContent='台下约 '+realCount+' 人';
+  if(isFirst){
+    $('live-feel').textContent='你站在台下第一排。\n'+GS.oshi+'走出来的时候，你觉得心跳漏了一拍。\n她比视频里好看。唱第一首歌的时候，她朝台下看了一眼——\n你确定她看到你了。\n\n演出结束后，Staff宣布特典会开始。';
+  }else if(GS.flags.firstLive<=3){
+    $('live-feel').textContent='第'+(GS.flags.firstLive)+'场。你又站在了第一排。\n她唱完最后一首歌的时候喘着气笑了——每次都是这个笑容。\n你觉得这个笑容值得你每周穿越半个城市。\n'+(realCount>20?'今天人多了些。你注意到有几个新面孔。':'人还是不多，但你习惯了。前排永远有你。');
+  }else{
+    const desc=realCount>30?'台下站满了，有人举着应援棒。她越来越好了。':realCount>15?'台下有二十来人，气氛不错。':'人不多，但你站在第一排——你每次都站在第一排。';
+    $('live-feel').textContent='第'+(GS.flags.firstLive)+'场了。\n'+desc+'\n\n演出结束。特典会即将开始。';
+  }
+  $('live-options').innerHTML='<button class="option-btn" onclick="showScreen(\'screen-tekkai\');startTekkai();">🎫 进入特典会</button>';
+}
+
+// ==================== TEKKAI ====================
+function startTekkai(){
+  showScreen('screen-tekkai');
+  GS.pendingTickets=GS.currentEvent&&GS.currentEvent._pledge?GS.currentEvent._pledge:1;
+  const preset=IDOL_PRESETS[GS.oshi]||{emoji:'⭐'};
+  $('tekkai-idol-avatar').textContent=preset.emoji;
+  $('tekkai-idol-name').textContent=GS.oshi;
+  $('ticket-count').textContent=GS.pendingTickets;
+  $('ticket-balance').textContent=GS.money;
+  $('ticket-units').textContent=GS.pendingTickets;
+  $('btn-buy-tickets').disabled=GS.pendingTickets*30>GS.money;
+  $('tekkai-queue').textContent='前面还有 '+(randInt(1,5))+' 人';
+  $('tekkai-dialogue').textContent='排队中……';
+  $('tekkai-options').innerHTML='';
+}
+
+function changeTickets(delta){
+  GS.pendingTickets=Math.max(1,Math.min(99,GS.pendingTickets+delta));
+  $('ticket-count').textContent=GS.pendingTickets;
+  $('ticket-units').textContent=GS.pendingTickets;
+  $('btn-buy-tickets').disabled=GS.pendingTickets*30>GS.money;
+}
+
+function buyTickets(){
+  const cost=GS.pendingTickets*30;
+  if(cost>GS.money){toast('余额不足！');return}
+  GS.money-=cost;GS.weekSpent+=cost;GS.ticketsBought=GS.pendingTickets;
+  GS.flags._totalSpent=(GS.flags._totalSpent||0)+cost;
+  if(GS.pendingTickets>=30)GS.flags.obsessiveActs++;
+  if(GS.pendingTickets<=3)GS.flags.healthyActs++;
+  updateStats();
+  // Private-contact prompt is handled after the Tekkai dialogue.
+  renderTekkaiDialogue();
+}
+
+function renderTekkaiDialogue(){
+  const w=GS.week;const t=GS.ticketsBought;const r=GS.relation;
+  let dialogue='',options=[];
+
+  // ---- Week 1: First meeting ever ----
+      if(w===1){
+        if(t<=3){
+          dialogue='轮到你的时候，她抬起头——是一张完全陌生的脸。\n「你好……是第一次来看我们吗？」她笑得有点紧张，营业感还没完全盖住生涩。';
+          options=[
+            {text:'「嗯，第一次。微博上看到视频来的。」',effect:{relation:2,obsession:1},hint:'关系+2 · 沉迷+1'},
+            {text:'「对，你比视频里好看。」',effect:{relation:3,obsession:3},hint:'关系+3 · 沉迷+3'},
+            {text:'点点头，没多说话',effect:{relation:1},hint:'关系+1'}
+          ];
+        }else if(t<=10){
+          dialogue='「'+t+'张……」她低头看了看券，又抬头看你——明显不认识你，但被这个数字惊了一下。\n「第一次来就切这么多？谢谢……」她笑了一下，有点不知所措。';
+          options=[
+            {text:'「看了你微博很久，今天终于来了。」',effect:{relation:5,obsession:4},hint:'关系+5 · 沉迷+4'},
+            {text:'「不多，就是想多聊几句。」',effect:{relation:4,obsession:3},hint:'关系+4 · 沉迷+3'},
+            {text:'「你的歌很好听。排练辛苦吗？」',effect:{relation:4,idolMental:2},hint:'关系+4 · 推心理+2'}
+          ];
+        }else{
+          dialogue='「'+t+'张？！」她真的愣住了——不是营业的那种愣。她低头看了看券，又看了看你的脸，确认自己不认识你。\n「你……是第一次来吧？」她的语气里有一点慌乱，像是在想「这个人是不是走错了」。';
+          options=[
+            {text:'「是第一次。看你微博三个月了，今天终于来了。」',effect:{relation:7,obsession:6},hint:'关系+7 · 沉迷+6'},
+            {text:'「没错。以后每周都来。」',effect:{relation:5,obsession:5},hint:'关系+5 · 沉迷+5'},
+            {text:'「就想多支持你。别紧张。」',effect:{relation:6,obsession:4,idolMental:3},hint:'关系+6 · 推心理+3'}
+          ];
+        }
+      // ---- Week 2-3: Seen you once, still basically strangers ----
+      }else if(w<=3){
+        if(t<=5){
+          dialogue='「啊，你是上周来过的那个——」她看了你一秒，好像想起来了。\n「谢谢你又来了。」笑容比上周自然了一点。';
+          options=[
+            {text:'「你又记住我了？」',effect:{relation:3,obsession:2},hint:'关系+3 · 沉迷+2'},
+            {text:'「嗯。上周看完就觉得必须再来。」',effect:{relation:4,obsession:3},hint:'关系+4 · 沉迷+3'},
+            {text:'「你上周那首歌叫什么？」',effect:{relation:3},hint:'关系+3'}
+          ];
+        }else if(t<=15){
+          dialogue='「又是你~切了'+t+'张呢。谢谢你。」她低头叠券，语气比上周熟了一点点——只是一点点。';
+          options=[
+            {text:'「今天排练累吗？」',effect:{relation:3,idolMental:2},hint:'关系+3 · 推心理+2'},
+            {text:'「不多，下周还来。」',effect:{relation:4,obsession:3},hint:'关系+4 · 沉迷+3'},
+            {text:'「你的歌我循环了一周。」',effect:{relation:5,obsession:2},hint:'关系+5 · 沉迷+2'}
+          ];
+        }else{
+          dialogue='「'+t+'张……」她愣了一下，然后很快笑了——营业的笑，但比上周真诚了半秒。\n「你上周也切了不少吧？谢谢一直来。」';
+          options=[
+            {text:'「以后每周都来。你值得。」',effect:{relation:6,obsession:5},hint:'关系+6 · 沉迷+5'},
+            {text:'「就是想多聊一会儿。」',effect:{relation:4,obsession:4},hint:'关系+4 · 沉迷+4'},
+            {text:'「你比上周更好了。」',effect:{relation:5,idolMental:3},hint:'关系+5 · 推心理+3'}
+          ];
+        }
+      }
+// ---- Week 4-7: Getting familiar ----
+      else if(w<=7){
+        if(t<=5){
+          dialogue='「又是你~今天'+(t===1?'只切了一张？':'')+'」她的语气比之前自然了一些。';
+          options=[
+            {text:'「来看你就够了」',effect:{relation:3},hint:'关系+3'},
+            {text:'「今天钱不太多，但来是一定要来的」',effect:{relation:4,obsession:2},hint:'关系+4 · 沉迷+2'},
+            {text:'「你上周那首新歌唱得特别好」',effect:{relation:5,idolMental:2},hint:'关系+5 · 推心理+2'}
+          ];
+        }else if(t<=20){
+          dialogue='「切了'+t+'张呢。你几乎每周都来啊。」她把券叠好放在手边。';
+          options=[
+            {text:'「你的每场我都想看」',effect:{relation:5,obsession:4},hint:'关系+5 · 沉迷+4'},
+            {text:t>=15?'「这周发了奖金，先来你这」':'「就想和你多聊会儿」',effect:{relation:4,obsession:3},hint:'关系+4 · 沉迷+3'},
+            {text:'「其实我有点好奇——你做地偶累吗？」',effect:{relation:6,idolMental:3},hint:'关系+6 · 推心理+3（她会说真话吗？）'}
+          ];
+        }else{
+          dialogue='「'+t+'张券。」她把券收好，看着你。\n「你真的每次都来。」她的语气有点复杂——像是感动，又像是别的什么。';
+          options=[
+            {text:'「因为想见你」',effect:{relation:8,obsession:6,idolMental:-2},hint:'关系+8 · 沉迷+6 · ⚠️'},
+            {text:'「喜欢看Live而已」',effect:{relation:3,obsession:2},hint:'关系+3 · 沉迷+2'},
+            {text:'「想和你多聊一会儿。」',effect:{relation:4,obsession:3},hint:'关系+4 · 沉迷+3'}
+          ];
+        }
+      }
+// ---- Week 8-10: Deeper connection / Crossing lines ----
+      else if(w<=10){
+        if(r>=45){
+          dialogue='她看到你的时候，笑了一下——不是营业的笑。\n「你来了。」就这三个字，但你觉得比之前所有的话都温柔。';
+          options=[
+            {text:'「嗯。每周都来。」',effect:{relation:4},hint:'关系+4'},
+            {text:'「今天辛苦了。你看起来有点累。」',effect:{relation:5,idolMental:3},hint:'关系+5 · 推心理+3'},
+            {text:'「下周也来。」',effect:{relation:2},hint:'关系+2'}
+          ];
+        }else if(t>=30){
+          dialogue='「'+t+'张……」她看着券，沉默了几秒。\n「你知道其实不用切这么多的，对吧。」';
+          options=[
+            {text:'「我知道。但我愿意。」',effect:{relation:6,obsession:8,idolMental:-2},hint:'关系+6 · 沉迷+8 · ⚠️'},
+            {text:'「下次会少切一点的」',effect:{relation:3,healthyActs:1},hint:'关系+3 · 健康+1'},
+            {text:'「谢谢你的提醒。下次会注意。」',effect:{relation:2},hint:'关系+2'}
+          ];
+        }else if(t<=10){
+          dialogue='「今天切'+t+'张。」她看了看你，语气很轻。\n「你最近……还好吗？」';
+          options=[
+            {text:'「挺好的，工作有点忙」',effect:{relation:3,realLife:2},hint:'关系+3 · 现充+2'},
+            {text:'「来看你是我一周最好的时候」',effect:{relation:5,obsession:4},hint:'关系+5 · 沉迷+4'},
+          ];
+        }else{
+          dialogue='「'+t+'张。真的很感谢你一直来。」她看着你的眼睛说。';
+          options=[
+            {text:'「不客气。能来是你的幸运」',effect:{relation:4,idolMental:2},hint:'关系+4 · 推心理+2'},
+            {text:'「其实……我有时候会想，如果你不是偶像就好了」',effect:{relation:6,obsession:7,idolMental:-3,boundaryCrossed:2,idolUncomfortable:1},hint:'关系+6 · 沉迷+7 · ⚠️⚠️'},
+          ];
+        }
+      }
+// ---- Week 11-13: Endgame ----
+  else {
+    if(w===13){
+      dialogue='「今天是最后一次了。」她看着你，沉默了几秒。\n然后她笑了——和第一次见你的时候一模一样。';
+      options=[
+        {text:'「谢谢你这三个月。」',effect:{relation:5,healthyActs:2},hint:'关系+5',next:'settlement'},
+        {text:'「以后还能见面吗？」',effect:{relation:4,obsession:4},hint:'关系+4 · 沉迷+4',next:'settlement'},
+        {text:'什么都不说，轻轻点头',effect:{relation:6,idolMental:3},hint:'关系+6 · 推心理+3',next:'settlement'}
+      ];
+    }else if(GS.flags.boundaryCrossed>=2){
+      dialogue='她看到你的时候，笑了一下——但你注意到那个笑比以前多了一点距离。\n「谢谢今天来。」她的语气比平时客气。';
+      options=[
+        {text:'「……你是不是不太想看到我了」',effect:{relation:-5,obsession:5,idolMental:-5},hint:'关系-5 · 沉迷+5 · ⚠️⚠️'},
+        {text:'「嗯，谢谢你。」',effect:{relation:1,healthyActs:1},hint:'关系+1',next:'settlement'},
+        {text:'什么都不说',effect:{boundaryCrossed:1},hint:'⚠️',next:'settlement'}
+      ];
+    }else if(r>=50){
+      dialogue='「你来了。」她笑得很自然。「今天是倒数第'+(13-w)+'场了。」';
+      options=[
+        {text:'「我知道。所以每一场都不想错过。」',effect:{relation:5,obsession:3},hint:'关系+5 · 沉迷+3'},
+        {text:'「之后你打算做什么？」',effect:{relation:4},hint:'关系+4'},
+        {text:'「不管怎样，这段时间谢谢你。」',effect:{relation:4,obsession:2},hint:'关系+4'}
+      ];
+    }else{
+      dialogue='「第'+(GS.flags.firstLive)+'场了吧？」她问。\n「谢谢一直来。」';
+      options=[
+        {text:'「不客气。以后也会来的」',effect:{relation:3},hint:'关系+3'},
+        {text:'「你越来越好了」',effect:{relation:4,idolMental:3},hint:'关系+4 · 推心理+3'},
+      ];
+    }
+  }
+
+  // Handle private contact proposal response — player must choose to ask
+  // Flag proposedPrivate triggers the idol's response
+  const privOpt = options.find(o=>o.flag&&o.flag.proposedPrivate);
+  if(privOpt && GS.flags.wechatGot===0 && GS.flags.weiboAlt===0){
+    if(r>=50){
+      // High trust + did NOT previously weiboAlt → idol offers WeChat
+      if(GS.flags.weiboAltChat===0 && GS.flags.obsessiveActs>=2){
+        // Player has been obsessive → idol suggests burner Weibo instead (leads to 我来袭)
+        dialogue='她沉默了很久。比之前任何一次都久。\n「……微信不行。被staff发现就完了。」\n然后她压低了声音：\n「但我有个微博小号。不加V的那种。你要的话……我告诉你。」';
+        privOpt.text='（她给了微博小号）';
+        privOpt.flag={weiboAlt:1};
+        privOpt.hint='⚠️ 拿到了微博小号！这是另一条路……';
+        privOpt.effect={...privOpt.effect, relation:privOpt.effect.relation+4};
+      }else{
+        // Standard WeChat path
+        dialogue='她沉默了几秒。\n「……好吧。但你别说出去。」\n她拿出手机，扫了你的二维码。';
+        privOpt.text='（她同意了）';
+        privOpt.flag={wechatGot:1};
+        privOpt.hint='⚠️⚠️ 拿到了微信！真正的私联开始了……';
+        privOpt.effect={...privOpt.effect, relation:privOpt.effect.relation+3};
+      }
+    }else if(r>=35 && GS.flags.obsessiveActs>=2){
+      // Medium trust + obsessive → burner Weibo only
+      dialogue='她犹豫了一下。\n「微信真的不行……但我有个不用的微博小号。」\n她在一张便签上写了一个ID，递给你。\n「别告诉别人。」';
+      privOpt.text='（她给了微博小号）';
+      privOpt.flag={weiboAlt:1};
+      privOpt.hint='⚠️ 拿到了微博小号！秘密的联系方式……';
+      privOpt.effect={...privOpt.effect, relation:privOpt.effect.relation+3};
+    }else if(r>=50){
+      // High trust, not obsessive → WeChat
+      dialogue='她沉默了几秒。\n「……好吧。但你别说出去。」\n她拿出手机，扫了你的二维码。';
+      privOpt.text='（她同意了）';
+      privOpt.flag={wechatGot:1};
+      privOpt.hint='⚠️⚠️ 拿到了微信！真正的私联开始了……';
+      privOpt.effect={...privOpt.effect, relation:privOpt.effect.relation+3};
+    }else{
+      // Refused
+      dialogue='她犹豫了一下。\n「……不好意思，真的不行。万一被发现了对谁都不好。」\n她说得很诚恳。';
+      privOpt.text='「我理解。没关系。」';
+      privOpt.flag={privateRefused:1};
+      privOpt.hint='被拒绝了。关系-1';
+      privOpt.effect={relation:-1};
+    }
+    $('tekkai-dialogue').textContent=dialogue;
+  }else{
+    $('tekkai-dialogue').textContent=dialogue;
+  }
+
+  GS.tekkaiOptions=options;GS.tekkaiOptions=options;
+  let ohtml='';
+  options.forEach((o,i)=>{
+    const isWarn=o.hint&&o.hint.includes('⚠️');
+    ohtml+='<button class="option-btn'+(isWarn?' warn':'')+'" onclick="tekkaiChoose('+i+')">'+o.text+(o.hint?'<span class="effect-hint">'+o.hint+'</span>':'')+'</button>';
+  });
+  $('tekkai-options').innerHTML=ohtml;
+}
+
+function tekkaiChoose(idx){
+  const opt=GS.tekkaiOptions[idx];if(!opt)return;
+  if(opt.effect)changeStats(opt.effect);
+  if(opt.flag){
+    if(opt.flag.wechatGot){GS.flags.wechatGot=1;}
+    if(opt.flag.weiboAlt){GS.flags.weiboAlt=1;}
+    if(opt.flag.proposedPrivate){GS.flags.proposedPrivate=1;}
+    if(opt.flag.wechatRefused)GS.flags.wechatAsked=2;
+    if(opt.flag.boundaryCrossed)GS.flags.boundaryCrossed+=opt.flag.boundaryCrossed;
+    if(opt.flag.healthyActs)GS.flags.healthyActs+=opt.flag.healthyActs;
+    if(opt.flag.wechatAsk){} // handled in render
+  }
+  updateStats();
+
+  // Post-private-contact: OTA notices (wechat OR weibo alt)
+  if(GS.flags.wechatGot===1 && GS.week>=9 && Math.random()<0.4 && GS.flags.wechatExposed===0){
+    GS.flags.wechatExposed=1;
+    toast("⚠️ 有OTA注意到你和她互动不太一样……");
+  }
+
+  if(opt.next==='settlement'){showScreen('screen-main');renderSettlement();return}
+  // Post-Tekkai private contact event
+  checkPostTekkaiPrivate();
+  showScreen('screen-main');renderSettlement();
+}
+
+// ==================== SETTLEMENT ====================
+function prepareFinalFlags(){
+  if(GS.week<13)return;
+  const f=GS.flags;
+  f.oshiGraduated=1;
+
+  if(f.wechatGot===0 && f.weiboAlt===0 && GS.relation>=40){
+    f.contactAfterGrad=1;
+  }
+
+  if(f.wechatGot && !f.wechatExposed && GS.relation>=75 && GS.obsession>=55 && GS.obsession<=80 && f.healthyActs>=3){
+    f.banned=1;
+    f.idolWantsFriend=1;
+    f.revealedOnBoard=1;
+  }
+}
+
+function renderSettlement(){
+  showScreen('screen-settlement');
+  $('settle-week').textContent=GS.week;$('settle-spent').textContent='¥'+GS.weekSpent;
+  $('settle-balance').textContent='¥'+GS.money;
+  const obsBefore=GS.obsession;
+  GS.obsession=Math.max(0,GS.obsession-2);
+  GS.realLife=Math.max(0,GS.realLife-(GS.apAlloc.realLife>0?1:3));
+
+  // Default oshikatsu: if player forgot偶活, still went once (故事设定)
+  if(GS.apAlloc.ota===0){GS.obsession+=randInt(3,5);GS.relation+=randInt(1,2);}
+  // Broke check
+  if(GS.money<30){GS.flags.brokeCount++;}
+  // Weibo alt chat: she messages via burner
+  if(GS.flags.weiboAlt===1 && GS.flags.weiboAltChat===0 && GS.week>=8 && GS.flags._burnerModalShown===0){GS.flags._burnerModalShown=1;showModalBurnerChat();}
+  // Bar date: she mentions a nice bar
+  if(GS.flags.weiboAltChat===1 && GS.flags.barDate===0 && GS.week>=10 && GS.flags._barModalShown===0){GS.flags._barModalShown=1;showModalBarDate();}
+  // Bar date exposed by OTA
+  if(GS.flags.barDate===1 && GS.flags.barDateExposed===0 && GS.week>=11 && Math.random()<0.4){GS.flags.barDateExposed=1;GS.flags.blamed=1;showModalBarDateExposed();}
+  // Post-wechat: if wechat was exposed, trigger events
+  if(GS.flags.wechatExposed===1 && GS.week>=10){
+    // OTA circle digs deeper - 50% chance full exposure on揭示板
+    if(Math.random()<0.5 && GS.flags.exposedByPeer===0){
+      GS.flags.exposedByPeer=1;
+    }
+  }
+  // OTA exposure +揭示板投稿 = double social death path
+  if(GS.flags.wechatExposed && GS.flags.exposedByPeer && !GS.flags.revealedOnBoard && GS.week>=10){
+    GS.flags.revealedOnBoard=1;
+    triggerEnding('doubleExposure');return;
+  }
+
+  updateStats();
+  if(GS.flags.brokeCount>=3){triggerEnding('broke');return}
+  if(GS.obsession>=95&&GS.flags.boundaryCrossed>=3){triggerEnding('stalker');return}
+
+  // Week 13 post-tekkai → check ending
+  if(GS.week>=13){prepareFinalFlags();checkEnding();return}
+
+  const lines=[
+    '沉迷：'+obsBefore+' → '+GS.obsession+'（-2自然冷却）',
+    '本周切券'+GS.ticketsBought+'张 · 花费¥'+GS.weekSpent,
+    '存款¥'+GS.money,
+    GS.money<30?'⚠️ 余额不足！':'',
+    GS.obsession>80?'⚠️ 沉迷度很高……':'',
+    GS.realLife<20?'⚠️ 现充值很低——现实中的人开始担心你':'',
+    GS.flags.wechatExposed&&GS.flags.wechatGot?'⚠️ OTA圈子里有人注意到你和她走得太近了……':'' ];
+  $('settle-text').innerHTML=lines.filter(l=>l).map(l=>'<div>'+l+'</div>').join('');
+}
+
+function nextWeek(){
+  if(GS.flags.gameOver)return;
+  GS.week++;if(GS.week>13){prepareFinalFlags();checkEnding();return}
+  // Post-game: idol wants to be friend after banning (sunshine friend path)
+  if(GS.flags.banned===1 && GS.flags.idolWantsFriend===0 && GS.flags.wechatGot===1 && GS.week>13){
+    GS.flags.idolWantsFriend=1;
+    if(GS.flags.wechatExposed===0) GS.flags.revealedOnBoard=1; // gets revealed
+    triggerEnding('sunshineFriend');return;
+  }
+  startWeek();
+}
+
+// ==================== ENDING (balanced probability) ====================
+function triggerEnding(key){
+  GS.flags.gameOver=1;
+  const e=ENDINGS[key]||ENDINGS['ordinaryFan'];
+  $('ending-type').textContent=e.type;$('ending-title').textContent=e.title;
+  $('ending-text').textContent=e.text;
+  $('end-money').textContent='¥'+GS.money;$('end-obs').textContent=GS.obsession;$('end-rel').textContent=GS.relation;
+  showScreen('screen-ending');
+}
+
+function checkEnding(){
+  const f=GS.flags;
+  // Priority-ordered checks. Special endings first, then bad, then good.
+
+  // === SPECIAL ENDINGS (highest priority) ===
+  if(f.barDateExposed && f.blamed && f.weiboAlt) return triggerEnding('warekita');
+  if(f.revealedOnBoard && f.idolWantsFriend) return triggerEnding('sunshineFriend');
+  if(f.exposedByPeer && f.wechatGot) return triggerEnding('doubleExposure');
+
+  // === BAD ENDINGS ===
+  if(f.banned) return triggerEnding('stalker');
+  if(f.brokeCount>=3) return triggerEnding('broke');
+  if(GS.identity==='worker' && GS.realLife<=15 && GS.obsession>=70 && GS.week>=10) return triggerEnding('fired');
+  if(f.boundaryCrossed>=3 && GS.obsession>=85) return triggerEnding('stalker');
+  if(f.wechatExposed && f.wechatGot && !f.exposedByPeer) return triggerEnding('doubleExposure');
+  if(f.idolUncomfortable>=3 && GS.obsession>=70) return triggerEnding('obsession');
+
+  // === NEUTRAL / SPECIAL ===
+  if(GS.identity==='student' && f.parentDiscover>=2) return triggerEnding('parentFound');
+
+  if(f.contactAfterGrad && GS.relation>=80 && GS.obsession<=40 && f.healthyActs>=8 && f.wechatGot===0 && f.weiboAlt===0) return triggerEnding('marriageHE');
+  if(f.contactAfterGrad && GS.relation>=70 && GS.obsession<=50 && f.healthyActs>=6 && f.wechatGot===0 && f.weiboAlt===0) return triggerEnding('streamerReunion');
+  // === GOOD ENDINGS (no private contact during active period) ===
+  if(f.healthyActs>=7 && f.wechatGot===0 && f.weiboAlt===0) return triggerEnding('healthyDistance');
+  if(f.wechatGot && GS.relation>=60 && f.wechatExposed===0 && GS.obsession<=60) return triggerEnding('graduateLove');
+  if(f.healthyActs>=5 && GS.relation>=30 && GS.obsession<=50) return triggerEnding('graduation');
+  if(GS.realLife>=50 && GS.obsession<=40 && f.healthyActs>=4) return triggerEnding('healthyDistance');
+  if(GS.obsession<=30 && GS.realLife>=45) return triggerEnding('realityReturn');
+  if(f.healthyActs>=3 && GS.relation>=35 && f.wechatGot===0 && f.weiboAlt===0) return triggerEnding('trueBond');
+
+  // === FALLBACKS ===
+  if(GS.obsession>=65) return triggerEnding('obsession');
+  if(f.healthyActs>=3) return triggerEnding('ordinaryFan');
+  if(f.obsessiveActs>=3) return triggerEnding('obsession');
+  return triggerEnding('ordinaryFan');
+}
+
+// ==================== MODAL ====================
+
+// ==================== BURNER ACCOUNT MODALS ====================
+function showModalBurnerChat(){
+  if(GS.flags.gameOver)return;
+  var o=GS.oshi;
+  $('modal-overlay').classList.add('show');
+  $('modal-content').innerHTML='<h3>💬 微博小号</h3><p>'+o+'通过小号发来了一条私信：</p><p style="color:rgba(255,255,255,0.8);font-size:12px;line-height:1.7">「是我。别回大号。这里安全。」</p><p>她的语气比Livehouse里放松多了——没有营业感，就是一个人下班后发的消息。</p><div class="btn-row"><button class="btn-cancel" onclick="burnerChoice(\'cautious\')">礼貌回复，保持距离</button><button class="btn-modal-ok" onclick="burnerChoice(\'enthusiastic\')">热情回应，畅聊</button></div>';
+}
+function burnerChoice(c){
+  closeModal();
+  if(c==='enthusiastic'){
+    GS.flags.weiboAltChat=1;GS.relation+=5;GS.obsession+=4;
+    toast('在小号上聊了很多——这种感觉和特典会完全不一样');
+  }else{
+    GS.flags.weiboAltChat=0;GS.flags.healthyActs+=1;GS.idolMental+=3;
+    toast('你回得很克制。她隔了很久才回复，但语气很正常');
+  }
+  if(c==='cautious' && GS.flags.gameOver===0)checkEnding();
+}
+function showModalBarDate(){
+  if(GS.flags.gameOver)return;
+  var o=GS.oshi;
+  $('modal-overlay').classList.add('show');
+  $('modal-content').innerHTML='<h3>🍺 小号聊天</h3><p>聊了几周，'+o+'在小号上越来越放松。有一天她说：</p><p style="color:rgba(255,255,255,0.8);font-size:12px;line-height:1.7">「话说有家酒馆的梅酒很好喝。\n每次排练路过都想进去，\n但一个人去好奇怪w」</p><p>你知道这意味着什么。在Livehouse之外见她。</p><div class="btn-row"><button class="btn-cancel" onclick="barChoice(\'decline\')">「下次吧，被拍到就糟了」</button><button class="btn-modal-ok" style="background:#ff4d4f" onclick="barChoice(\'accept\')">「要不要一起去」</button></div>';
+}
+function barChoice(c){
+  closeModal();
+  if(c==='accept'){
+    GS.flags.barDate=1;GS.relation+=8;GS.obsession+=6;
+    toast('🍺 她秒回：「我来袭」');
+  }else{
+    GS.flags.barDate=0;GS.flags.healthyActs+=2;GS.relation+=2;
+    toast('她说「也是……被拍到就糟了」——语气有点失望');
+  }
+  if(c==='decline' && GS.flags.gameOver===0)checkEnding();
+}
+function showModalBarDateExposed(){
+  if(GS.flags.gameOver)return;
+  $('modal-overlay').classList.add('show');
+  $('modal-content').innerHTML='<h3>⚠️ 揭示板</h3><p style="color:#f38ba8;font-size:12px;line-height:1.7">有人在马路对面拍了照。\n第二天，揭示板上出现了帖子：\n「某现役地偶与OTA深夜便利店私会。附图。」\n照片里是你帮她拧瓶盖的侧影。拍得很清楚。</p><p>评论区已经炸了。</p><div class="btn-row"><button class="btn-modal-ok" onclick="closeModal();if(!GS.flags.gameOver)triggerEnding(\'warekita\');">继续</button></div>';
+}
+
+
+// ==================== POST-TEKKAI PRIVATE CONTACT ====================
+// After the Tekkai chat ends, a separate event may trigger where
+// the player can choose to request private contact (wechat or weibo alt).
+// This only happens if: big spender + enough trust + hasn't already asked.
+function checkPostTekkaiPrivate(){
+  if(GS.flags.gameOver)return;
+  if(GS.flags.wechatGot||GS.flags.weiboAlt||GS.flags.wechatAsked>=1)return;
+  if(GS.week<4)return; // too early
+  const bigSpender=GS.ticketsBought>=30;
+  const obsessive=GS.flags.obsessiveActs>=2;
+  const highTrust=GS.relation>=40;
+  if(!bigSpender && !obsessive)return; // only triggers for committed fans
+  if(!highTrust && !obsessive)return;
+
+  GS.flags.wechatAsked=1; // mark as asked this run
+  showModalPrivateRequest();
+}
+
+function showModalPrivateRequest(){
+  var o=GS.oshi;
+  $('modal-overlay').classList.add('show');
+  var desc='';
+  if(GS.relation>=50){
+    desc='特典会结束了。你走出Livehouse的时候，'+o+'的Staff正在收拾桌子。\n\n你回头看了一眼——她也在看你。\n\n你想起这'+GS.week+'周来，每次都在第一排。每次切券。每次聊同样的话题。\n你觉得有些话在特典会上说不完。\n\n要不要问她——有没有其他方式能联系？';
+  }else if(GS.flags.obsessiveActs>=2){
+    desc='散场后，你站在Livehouse门口没走。\n\n这已经是你第'+GS.week+'次来了。每次切很多券。每次聊到Staff催。\n\n你不想只是这样。你想知道她特典会之外是什么样子。\n\n要不要问问她？';
+  }else{
+    desc='特典会结束了。她对你笑了一下——比之前自然多了。\n\n你们已经聊了好几周了。你开始觉得，只在特典会上见面不够。\n\n要不要问问她——有没有其他方式能联系？';
+  }
+  $('modal-content').innerHTML='<h3>散场后</h3><p style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.7">'+desc+'</p><div class="btn-row"><button class="btn-cancel" onclick="closeModal();privateRequestChoice(\'no\')">算了，这样就好</button><button class="btn-modal-ok" onclick="privateRequestChoice(\'ask\')">问她有没有私下联系的方式</button></div>';
+}
+
+function privateRequestChoice(choice){
+  closeModal();
+  if(choice==='no'){
+    GS.flags.healthyActs+=1;
+    toast('你觉得这样就够了。下周见。');
+    return;
+  }
+  // Player asks. Idol responds based on trust and obsessive level.
+  if(GS.relation>=50){
+    if(GS.flags.obsessiveActs>=2){
+      // High trust + obsessive → burner weibo
+      GS.flags.weiboAlt=1;GS.relation+=5;GS.obsession+=3;
+      $('modal-overlay').classList.add('show');
+      $('modal-content').innerHTML='<h3>她的回应</h3><p style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.7">她犹豫了一下。<br><br>「微信不行……会被staff查到。」<br><br>然后她压低了声音：「但我有个微博小号。不加V的那种。你要的话……我告诉你。」</p><p style="color:#cba6f7;font-size:11px">她在一张便签上写了一个ID，递给你。</p><div class="btn-row"><button class="btn-modal-ok" onclick="closeModal()">收好便签</button></div>';
+      toast('拿到了微博小号……');
+    }else{
+      // High trust, not obsessive → WeChat
+      GS.flags.wechatGot=1;GS.relation+=8;GS.obsession+=4;
+      $('modal-overlay').classList.add('show');
+      $('modal-content').innerHTML='<h3>她的回应</h3><p style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.7">她沉默了几秒。<br><br>「……好吧。但你别说出去。」<br><br>她拿出手机，扫了你的二维码。</p><div class="btn-row"><button class="btn-modal-ok" onclick="closeModal()">收好手机</button></div>';
+      toast('⚠️ 拿到了微信！');
+    }
+  }else if(GS.flags.obsessiveActs>=2 && GS.relation>=35){
+    // Medium trust, obsessive → only burner
+    GS.flags.weiboAlt=1;GS.relation+=4;GS.obsession+=3;
+    $('modal-overlay').classList.add('show');
+    $('modal-content').innerHTML='<h3>她的回应</h3><p style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.7">她犹豫了一下。<br><br>「微信真的不行。但我有个不用的微博小号。别告诉别人。」<br><br>她在一张便签上写了一个ID。</p><div class="btn-row"><button class="btn-modal-ok" onclick="closeModal()">收好便签</button></div>';
+    toast('拿到了微博小号……');
+  }else{
+    // Refused
+    GS.flags.wechatAsked=2;
+    $('modal-overlay').classList.add('show');
+    $('modal-content').innerHTML='<h3>她的回应</h3><p style="color:rgba(255,255,255,0.7);font-size:12px;line-height:1.7">她犹豫了一下。<br><br>「……不好意思，真的不行。万一被发现了对谁都不好。」<br><br>她说得很诚恳，笑了一下。不是营业的笑——是真的觉得抱歉。</p><div class="btn-row"><button class="btn-modal-ok" onclick="closeModal()">「我理解」</button></div>';
+    toast('被拒绝了。但她说得很诚恳。');
+  }
+}
+
+
+function closeModal(){$('modal-overlay').classList.remove('show')}
+$('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
+
+// ==================== INIT ====================
+updateStats();
+</script>
+</body>
+</html>
